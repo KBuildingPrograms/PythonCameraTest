@@ -45,13 +45,21 @@ def goodzoneCheck(cam,corners1,corners2):
     print("Press q to exit")
     print("Press d to take a depth map screenshot")
     referencing_depth = False
+    detector = cv.SimpleBlobDetector() #Very basic blob dector, will update with trackbars so we can isolate the best settings
     while True:
             ret, frame = cam.read()
             disparity = cf.getDepthMap(frame)
+            frame[0:frame.shape[0], 0:int(frame.shape[1]/2)] = cv.polylines(frame[0:frame.shape[0], 0:int(frame.shape[1]/2)], corners1, isClosed=True,color=(0,0,255), thickness=2)
+            frame[0:frame.shape[0], int(frame.shape[1]/2):frame.shape[1]] = cv.polylines(frame[0:frame.shape[0], int(frame.shape[1]/2):0], corners1, isClosed=True,color=(0,0,255), thickness=2)
             reg_and_map = np.concatenate((frame,disparity),axis=1)
 
-            cv.imshow('Camera',reg_and_map)
-
+            if not referencing_depth:
+                cv.imshow('Camera',reg_and_map)
+            else: 
+                keypoints = cf.referenceMaps(detector,reference_disparity.disparity)
+                disp_plus_ref = np.concatenate((disparity,reference_disparity),axis=1)
+                disp_plus_ref = cv.drawKeypoints(disp_plus_ref,keypoints,0,(255,0,0),flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                cv.imshow('Active vs Reference',disp_plus_ref)
             if cv.waitKey(1) == ord('q'):
                 break
             elif cv.waitKey(1) == ord('d'):
